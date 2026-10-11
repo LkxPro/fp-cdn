@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>usb</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+ body{font-family:monospace;background:#000;color:#0f0;padding:10px;font-size:14px}
+ pre{white-space:pre-wrap;word-break:break-all}
+ button{font-size:16px;padding:10px;margin:5px;background:#036;color:#0ff;border:1px solid #0ff}
+ .h{color:#ff0}
+</style>
+</head>
+<body>
+<h2 class="h">WebUSB 枚举</h2>
+<button id="b1">① 选择 USB 设备（弹选择框）</button>
+<button id="b2">② 列出已授权设备</button>
+<button id="b3">③ 清空</button>
+<pre id="out">点击按钮开始。选完设备会自动 dump 全部描述符。</pre>
+<script>
+var out=document.getElementById('out');
+function w(s){out.textContent += "\n"+s;}
+
+function hex(n,bits){ if(n===undefined||n===null) return String(n); return "0x"+n.toString(16).padStart(bits||4,"0"); }
+
+async function dumpDevice(d){
+  var s="";
+  s += "==================================================\n";
+  s += "device: "+d.productName+"  |  mfr: "+d.manufacturerName+"  |  serial: "+d.serialNumber+"\n";
+  s += "  VID="+hex(d.vendorId)+"  PID="+hex(d.productId)+"\n";
+  s += "  deviceClass="+hex(d.deviceClass,2)+" subclass="+hex(d.deviceSubclass,2)+" protocol="+hex(d.deviceProtocol,2)+"\n";
+  s += "  usbVersionMajor="+d.usbVersionMajor+"."+d.usbVersionMinor+"."+d.usbVersionSubminor+"\n";
+  s += "  deviceVersionMajor="+d.deviceVersionMajor+"."+d.deviceVersionMinor+"."+d.deviceVersionSubminor+"\n";
+  s += "  configurations: "+d.configurations.length+"\n";
+  for(var i=0;i<d.configurations.length;i++){
+    var c=d.configurations[i];
+    s += "  [cfg "+c.configurationValue+"] "+c.configurationName+"  interfaces="+c.interfaces.length+"\n";
+    for(var j=0;j<c.interfaces.length;j++){
+      var itf=c.interfaces[j];
+      for(var k=0;k<itf.alternates.length;k++){
+        var a=itf.alternates[k];
+        s += "     itf "+itf.interfaceNumber+" alt "+a.alternateSetting+
+             " cls="+hex(a.interfaceClass,2)+" sub="+hex(a.interfaceSubclass,2)+" proto="+hex(a.interfaceProtocol,2)+
+             " eps="+a.endpoints.length+" "+a.interfaceName+"\n";
+        for(var e=0;e<a.endpoints.length;e++){
+          var ep=a.endpoints[e];
+          s += "        ep "+hex(ep.endpointNumber,2)+" dir="+ep.direction+" type="+ep.type+
+               " pkt="+ep.packetSize+" iv="+ep.interval+"\n";
+        }
+      }
+    }
+  }
+  return s;
+}
+
+async function tryOpenAndRead(d){
+  var s="--- raw descriptor read attempt ---\n";
+  try{
+    await d.open();
+    s += "  open(): OK\n";
+    // read device descriptor (18 bytes) via GET_DESCRIPTOR
+    try{
+      var r = await d.controlTransferIn({requestType:"standard",recipient:"device",request:6,value:(1<<8)|0,index:0},18);
+      s += "  GET_DESCRIPTOR(device,18): "+r.status+"  ["+Array.from(new Uint8Array(r.data.buffer)).map(x=>x.toString(16).padStart(2,"0")).join(" ")+"]\n";
+    }catch(e){ s += "  GET_DESCRIPTOR err: "+e+"\n"; }
+    // read config descriptor
+    try{
+      var r2 = await d.controlTransferIn({requestType:"standard",recipient:"device",request:6,value:(2<<8)|0,index:0},255);
+      s += "  GET_DESCRIPTOR(config,255): "+r2.status+"  len="+(r2.data?r2.data.byteLength:0)+"\n";
+    }catch(e){ s += "  GET_DESCRIPTOR(cfg) err: "+e+"\n"; }
+    await d.close();
+    s += "  close(): OK\n";
+  }catch(e){ s += "  open err: "+e+"\n"; }
+  return s;
+}
+
+document.getElementById('b1').onclick=async function(){
+  try{
+    var d = await navigator.usb.requestDevice({filters:[]});
+    w(await dumpDevice(d));
+    w(await tryOpenAndRead(d));
+  }catch(e){ w("requestDevice: "+e); }
+};
+document.getElementById('b2').onclick=async function(){
+  try{
+    var list = await navigator.usb.getDevices();
+    w("getDevices: "+list.length+" already-granted");
+    for(var i=0;i<list.length;i++){ w(await dumpDevice(list[i])); }
+  }catch(e){ w("getDevices err: "+e); }
+};
+document.getElementById('b3').onclick=function(){ out.textContent="cleared"; };
+</script>
+</body>
+</html>
