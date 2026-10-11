@@ -19,6 +19,7 @@
 </head>
 <body>
 <h1>WebUSB 设备枚举</h1>
+<div id="who" style="background:#330;color:#ff0;padding:10px;font-size:17px;margin-bottom:10px">设备自检中...</div>
 <button id="b1">① 选择 USB 设备</button>
 <button id="b2">② 列出已授权</button>
 <button id="b3">③ 生成二维码</button>
@@ -30,6 +31,15 @@ var out=document.getElementById('out');
 var lastSummary="";
 function w(s){out.textContent += "\n"+s; out.scrollTop=out.scrollHeight;}
 function hex(n,b){ if(n===undefined||n===null) return String(n); return "0x"+n.toString(16).padStart(b||4,"0"); }
+
+// 自检：这个页面到底跑在哪台设备上？
+(function selfcheck(){
+  var ua=navigator.userAgent, p=navigator.platform, sw=screen.width, sh=screen.height;
+  var isCar = /arm|aarch/i.test(p) && sw>1200 && sh>1000;
+  var d=document.getElementById('who');
+  d.innerHTML = "UA="+ua+"<br>platform="+p+"  screen="+sw+"x"+sh+"<br>"+
+    (isCar? "<b>→ 看起来是【车机】✅</b>" : "<b>→ 看起来是【电脑/手机】❌ 这不是车机！请用车机浏览器打开</b>");
+})();
 
 function makeQR(text,label){
   var div=document.createElement('div');
