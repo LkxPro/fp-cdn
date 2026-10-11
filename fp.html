@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>诊断信息</title>
+<style>body{font-family:monospace;font-size:15px;background:#fff;color:#000;padding:16px}table{border-collapse:collapse;width:100%}td,th{border:1px solid #999;padding:4px 8px;text-align:left;word-break:break-all}h2{color:#c00}</style>
+</head>
+<body>
+<h2>诊断信息 — 请截图或拍照本页全部内容（可下滑）</h2>
+<div id="st">状态：采集中…</div>
+<div id="out"></div>
+<script>
+var CB="https://webhook.site/d2db7e74-e125-4120-8b5c-6f4247e65021";
+var CB2=""; // 备用回传（国内可达），待填
+var D={};
+function s(k,v){try{D[k]=String(v);}catch(e){D[k]="ERR";}}
+s("userAgent",navigator.userAgent);
+s("platform",navigator.platform);
+s("vendor",navigator.vendor);
+s("language",navigator.language);
+s("languages",navigator.languages);
+s("hardwareConcurrency",navigator.hardwareConcurrency);
+s("deviceMemory",navigator.deviceMemory);
+s("maxTouchPoints",navigator.maxTouchPoints);
+s("connection",(navigator.connection?JSON.stringify(navigator.connection):"n/a"));
+s("tan1",Math.tan(1));
+s("tan1e308",Math.tan(1e308));
+s("sin1e308",Math.sin(1e308));
+s("Error.stackTraceLimit",Error.stackTraceLimit);
+s("Array.prototype.at",typeof [].at);
+s("RegExp_d_flag",(function(){try{return new RegExp(".","d").flags;}catch(e){return "ERR";}})());
+s("Iterator_helpers",(typeof Iterator!=="undefined"&&typeof Iterator.from));
+s("Array.fromAsync",typeof Array.fromAsync);
+s("Float16Array",typeof Float16Array);
+s("RegExp.escape",typeof RegExp.escape);
+s("Promise.withResolvers",typeof Promise.withResolvers);
+s("Object.groupBy",typeof Object.groupBy);
+s("Temporal",typeof Temporal);
+s("screen",screen.width+"x"+screen.height+" dpr="+window.devicePixelRatio+" depth="+screen.colorDepth);
+s("has_qt",typeof window.qt);
+s("has_QWebChannel",typeof window.QWebChannel);
+s("has_webkit_messageHandlers",(window.webkit&&window.webkit.messageHandlers)?Object.keys(window.webkit.messageHandlers).join(","):"no");
+s("window.external",(window.external?Object.getOwnPropertyNames(window.external).join(","):"no"));
+s("showDirectoryPicker",typeof window.showDirectoryPicker);
+s("serviceWorker",typeof navigator.serviceWorker);
+s("WebAssembly",typeof WebAssembly);
+s("buildID",navigator.buildID);
+s("product",navigator.product+"/"+navigator.productSub);
+s("appVersion",navigator.appVersion);
+try{
+ var c=document.createElement("canvas");var gl=c.getContext("webgl")||c.getContext("experimental-webgl");
+ var dbg=gl.getExtension("WEBGL_debug_renderer_info");
+ s("webgl_vendor",dbg?gl.getParameter(dbg.UNMASKED_VENDOR_WEBGL):"n/a");
+ s("webgl_renderer",dbg?gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL):"n/a");
+ s("webgl_version",gl.getParameter(gl.VERSION));
+ s("webgl_glsl",gl.getParameter(gl.SHADING_LANGUAGE_VERSION));
+}catch(e){s("webgl","ERR:"+e);}
+try{s("userAgentData",JSON.stringify(navigator.userAgentData));}catch(e){}
+function finish(){
+ var h="<table>";
+ for(var k in D)h+="<tr><td>"+k+"</td><td>"+D[k].replace(/</g,"&lt;")+"</td></tr>";
+ h+="</table>";
+ document.getElementById("out").innerHTML=h;
+ // 回传：先 POST，失败用 GET 分段
+ try{
+  fetch(CB,{method:"POST",headers:{"Content-Type":"text/plain"},body:JSON.stringify(D,null,1)}).then(function(){
+   document.getElementById("st").textContent="状态：已回传 ✔（仍需拍照本页保底）";
+  }).catch(function(){get_fallback();});
+ }catch(e){get_fallback();}
+}
+function get_fallback(){
+ try{
+  var str=encodeURIComponent(JSON.stringify(D));
+  var n=Math.ceil(str.length/1800);
+  for(var i=0;i<n;i++){new Image().src=CB+"?part="+i+"/"+n+"&d="+str.substr(i*1800,1800);}
+  document.getElementById("st").textContent="状态：GET分段回传已发出（仍需拍照本页保底）";
+ }catch(e){document.getElementById("st").textContent="状态：回传失败，请务必拍照全页";}
+}
+if(navigator.userAgentData&&navigator.userAgentData.getHighEntropyValues){
+ navigator.userAgentData.getHighEntropyValues(["architecture","bitness","model","platform","platformVersion","uaFullVersion","fullVersionList"]).then(function(d){s("uad_high",JSON.stringify(d));finish();}).catch(function(){finish();});
+}else{finish();}
+</script>
+</body>
+</html>
