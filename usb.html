@@ -2,50 +2,86 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>usb</title>
+<title>USB</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <style>
- body{font-family:monospace;background:#000;color:#0f0;padding:10px;font-size:14px}
- pre{white-space:pre-wrap;word-break:break-all}
- button{font-size:16px;padding:10px;margin:5px;background:#036;color:#0ff;border:1px solid #0ff}
- .h{color:#ff0}
+ body{font-family:monospace;background:#000;color:#0f0;padding:14px;font-size:18px;line-height:1.5}
+ h1{color:#0ff;font-size:26px;margin:0 0 12px}
+ button{font-size:22px;padding:16px 20px;margin:8px 8px 8px 0;background:#036;color:#0ff;border:2px solid #0ff;border-radius:8px}
+ button:active{background:#08f}
+ #out{background:#111;padding:12px;white-space:pre-wrap;word-break:break-all;font-size:15px;max-height:35vh;overflow:auto}
+ .qrwrap{background:#fff;padding:12px;margin:14px 0;display:inline-block}
+ .qrlabel{color:#000;font-size:18px;font-weight:bold;margin-bottom:6px}
+ img.qr{display:block;image-rendering:pixelated}
+ #qrs{background:#222;padding:10px}
 </style>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
 </head>
 <body>
-<h2 class="h">WebUSB 枚举</h2>
-<button id="b1">① 选择 USB 设备（弹选择框）</button>
-<button id="b2">② 列出已授权设备</button>
-<button id="b3">③ 清空</button>
-<pre id="out">点击按钮开始。选完设备会自动 dump 全部描述符。</pre>
+<h1>WebUSB 设备枚举</h1>
+<button id="b1">① 选择 USB 设备</button>
+<button id="b2">② 列出已授权</button>
+<button id="b3">③ 生成二维码</button>
+<div id="out">点【① 选择 USB 设备】→ 在弹出的框里选设备。选完会自动显示信息并生成二维码，拍照发我。</div>
+<div id="qrs"></div>
+
 <script>
 var out=document.getElementById('out');
-function w(s){out.textContent += "\n"+s;}
+var lastSummary="";
+function w(s){out.textContent += "\n"+s; out.scrollTop=out.scrollHeight;}
+function hex(n,b){ if(n===undefined||n===null) return String(n); return "0x"+n.toString(16).padStart(b||4,"0"); }
 
-function hex(n,bits){ if(n===undefined||n===null) return String(n); return "0x"+n.toString(16).padStart(bits||4,"0"); }
+function makeQR(text,label){
+  var div=document.createElement('div');
+  div.className='qrwrap';
+  var lab=document.createElement('div'); lab.className='qrlabel'; lab.textContent=label;
+  div.appendChild(lab);
+  try{
+    var qr=qrcode(0,'M');
+    qr.addData(text);
+    qr.make();
+    var img=document.createElement('img');
+    img.className='qr';
+    img.src=qr.createDataURL(6,2);
+    div.appendChild(img);
+  }catch(e){
+    var p=document.createElement('div'); p.style.color='#000'; p.textContent="QR err: "+e;
+    div.appendChild(p);
+  }
+  document.getElementById('qrs').appendChild(div);
+}
 
-async function dumpDevice(d){
+function renderQRs(summary){
+  document.getElementById('qrs').innerHTML="";
+  if(!summary){ w("(无内容)"); return; }
+  // chunk to ~420 chars so each QR stays small & photo-decodable
+  var CH=420, n=Math.ceil(summary.length/CH);
+  w("生成二维码: "+n+" 张 (共 "+summary.length+" 字符)");
+  for(var i=0;i<n;i++){
+    var part=summary.substr(i*CH,CH);
+    var payload = (n>1? ("["+(i+1)+"/"+n+"] ") : "") + part;
+    makeQR(payload, "QR "+(i+1)+"/"+n);
+  }
+}
+
+function dumpDevice(d){
   var s="";
-  s += "==================================================\n";
-  s += "device: "+d.productName+"  |  mfr: "+d.manufacturerName+"  |  serial: "+d.serialNumber+"\n";
-  s += "  VID="+hex(d.vendorId)+"  PID="+hex(d.productId)+"\n";
-  s += "  deviceClass="+hex(d.deviceClass,2)+" subclass="+hex(d.deviceSubclass,2)+" protocol="+hex(d.deviceProtocol,2)+"\n";
-  s += "  usbVersionMajor="+d.usbVersionMajor+"."+d.usbVersionMinor+"."+d.usbVersionSubminor+"\n";
-  s += "  deviceVersionMajor="+d.deviceVersionMajor+"."+d.deviceVersionMinor+"."+d.deviceVersionSubminor+"\n";
-  s += "  configurations: "+d.configurations.length+"\n";
+  s+="device="+d.productName+" | mfr="+d.manufacturerName+" | sn="+d.serialNumber+"\n";
+  s+="VID="+hex(d.vendorId)+" PID="+hex(d.productId)+"\n";
+  s+="devClass="+hex(d.deviceClass,2)+" sub="+hex(d.deviceSubclass,2)+" proto="+hex(d.deviceProtocol,2)+"\n";
+  s+="usbVer="+d.usbVersionMajor+"."+d.usbVersionMinor+"."+d.usbVersionSubminor+" devVer="+d.deviceVersionMajor+"."+d.deviceVersionMinor+"."+d.deviceVersionSubminor+"\n";
+  s+="configs="+d.configurations.length+"\n";
   for(var i=0;i<d.configurations.length;i++){
     var c=d.configurations[i];
-    s += "  [cfg "+c.configurationValue+"] "+c.configurationName+"  interfaces="+c.interfaces.length+"\n";
+    s+="cfg["+c.configurationValue+"] "+c.configurationName+" itfs="+c.interfaces.length+"\n";
     for(var j=0;j<c.interfaces.length;j++){
       var itf=c.interfaces[j];
       for(var k=0;k<itf.alternates.length;k++){
         var a=itf.alternates[k];
-        s += "     itf "+itf.interfaceNumber+" alt "+a.alternateSetting+
-             " cls="+hex(a.interfaceClass,2)+" sub="+hex(a.interfaceSubclass,2)+" proto="+hex(a.interfaceProtocol,2)+
-             " eps="+a.endpoints.length+" "+a.interfaceName+"\n";
+        s+=" itf"+itf.interfaceNumber+"."+a.alternateSetting+" cls="+hex(a.interfaceClass,2)+" sub="+hex(a.interfaceSubclass,2)+" proto="+hex(a.interfaceProtocol,2)+" eps="+a.endpoints.length+" "+a.interfaceName+"\n";
         for(var e=0;e<a.endpoints.length;e++){
           var ep=a.endpoints[e];
-          s += "        ep "+hex(ep.endpointNumber,2)+" dir="+ep.direction+" type="+ep.type+
-               " pkt="+ep.packetSize+" iv="+ep.interval+"\n";
+          s+="  ep"+hex(ep.endpointNumber,2)+" dir="+ep.direction+" type="+ep.type+" pkt="+ep.packetSize+" iv="+ep.interval+"\n";
         }
       }
     }
@@ -53,42 +89,44 @@ async function dumpDevice(d){
   return s;
 }
 
-async function tryOpenAndRead(d){
-  var s="--- raw descriptor read attempt ---\n";
+async function tryOpen(d){
+  var s="";
   try{
-    await d.open();
-    s += "  open(): OK\n";
-    // read device descriptor (18 bytes) via GET_DESCRIPTOR
+    await d.open(); s+="open=OK ";
     try{
-      var r = await d.controlTransferIn({requestType:"standard",recipient:"device",request:6,value:(1<<8)|0,index:0},18);
-      s += "  GET_DESCRIPTOR(device,18): "+r.status+"  ["+Array.from(new Uint8Array(r.data.buffer)).map(x=>x.toString(16).padStart(2,"0")).join(" ")+"]\n";
-    }catch(e){ s += "  GET_DESCRIPTOR err: "+e+"\n"; }
-    // read config descriptor
+      var r=await d.controlTransferIn({requestType:"standard",recipient:"device",request:6,value:(1<<8)|0,index:0},18);
+      s+="devDesc["+r.status+"]="+Array.from(new Uint8Array(r.data.buffer)).map(x=>x.toString(16).padStart(2,"0")).join("");
+    }catch(e){ s+="devDescERR:"+e; }
     try{
-      var r2 = await d.controlTransferIn({requestType:"standard",recipient:"device",request:6,value:(2<<8)|0,index:0},255);
-      s += "  GET_DESCRIPTOR(config,255): "+r2.status+"  len="+(r2.data?r2.data.byteLength:0)+"\n";
-    }catch(e){ s += "  GET_DESCRIPTOR(cfg) err: "+e+"\n"; }
-    await d.close();
-    s += "  close(): OK\n";
-  }catch(e){ s += "  open err: "+e+"\n"; }
+      var r2=await d.controlTransferIn({requestType:"standard",recipient:"device",request:6,value:(2<<8)|0,index:0},255);
+      s+=" cfgDesc["+r2.status+"]len="+(r2.data?r2.data.byteLength:0);
+    }catch(e){ s+=" cfgDescERR:"+e; }
+    await d.close(); s+=" close=OK";
+  }catch(e){ s+=" openERR:"+e; }
   return s;
 }
 
 document.getElementById('b1').onclick=async function(){
   try{
-    var d = await navigator.usb.requestDevice({filters:[]});
-    w(await dumpDevice(d));
-    w(await tryOpenAndRead(d));
+    var d=await navigator.usb.requestDevice({filters:[]});
+    var s=dumpDevice(d);
+    out.textContent=s;
+    w("---");
+    w(await tryOpen(d));
+    lastSummary=s.replace(/\n/g," | ");
+    renderQRs(lastSummary);
   }catch(e){ w("requestDevice: "+e); }
 };
 document.getElementById('b2').onclick=async function(){
   try{
-    var list = await navigator.usb.getDevices();
-    w("getDevices: "+list.length+" already-granted");
-    for(var i=0;i<list.length;i++){ w(await dumpDevice(list[i])); }
-  }catch(e){ w("getDevices err: "+e); }
+    var list=await navigator.usb.getDevices();
+    out.textContent="已授权设备: "+list.length;
+    var all="";
+    for(var i=0;i<list.length;i++){ all+=dumpDevice(list[i]); }
+    w(all); lastSummary=all.replace(/\n/g," | "); renderQRs(lastSummary);
+  }catch(e){ w("getDevices: "+e); }
 };
-document.getElementById('b3').onclick=function(){ out.textContent="cleared"; };
+document.getElementById('b3').onclick=function(){ renderQRs(lastSummary||out.textContent); };
 </script>
 </body>
 </html>
