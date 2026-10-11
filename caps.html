@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>caps</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+ body{font-family:monospace;background:#000;color:#0f0;padding:12px;font-size:17px;line-height:1.5}
+ h1{color:#0ff;font-size:20px;margin:0 0 8px}
+ #sum{background:#003;color:#ff0;padding:10px;font-size:19px;white-space:pre-wrap;border:1px solid #ff0}
+ pre{white-space:pre-wrap;word-break:break-all;font-size:15px}
+ button{font-size:17px;padding:10px;margin:5px;background:#036;color:#0ff;border:1px solid #0ff}
+</style>
+</head>
+<body>
+<h1>浏览器能力探测</h1>
+<div id="sum">扫描中...</div>
+<pre id="out"></pre>
+<div id="btns"></div>
+<script>
+var L=[],D={};
+function w(s){L.push(s);document.getElementById('out').textContent=L.join("\n");}
+function post(){/* static host: no sink */}
+function chk(name,getter){
+  var v; try{ v=getter(); }catch(e){ v="ERR:"+e; }
+  D[name]=String(v);
+  var ok=(v!==undefined&&v!==null&&v!==false&&String(v).indexOf("ERR")!==0&&v!=="undefined"&&v!=="null");
+  w((ok?"[+] ":"[ - ] ")+name+" = "+v);
+  return ok;
+}
+
+var secure = (window.isSecureContext===true);
+
+chk("location.protocol",()=>location.protocol);
+chk("isSecureContext",()=>window.isSecureContext);
+chk("crossOriginIsolated",()=>window.crossOriginIsolated);
+
+var cap={};
+cap.usb      = chk("navigator.usb",       ()=>typeof navigator.usb);
+cap.bt       = chk("navigator.bluetooth", ()=>typeof navigator.bluetooth);
+cap.serial   = chk("navigator.serial",    ()=>typeof navigator.serial);
+cap.hid      = chk("navigator.hid",       ()=>typeof navigator.hid);
+cap.nfc      = chk("navigator.nfc",       ()=>typeof navigator.nfc);
+cap.midi     = chk("navigator.requestMIDIAccess",()=>typeof navigator.requestMIDIAccess);
+cap.fileopen = chk("showOpenFilePicker",  ()=>typeof window.showOpenFilePicker);
+cap.dirpick  = chk("showDirectoryPicker", ()=>typeof window.showDirectoryPicker);
+cap.fsdir    = chk("storage.getDirectory",()=>typeof (navigator.storage&&navigator.storage.getDirectory));
+cap.sab      = chk("SharedArrayBuffer",   ()=>typeof SharedArrayBuffer);
+cap.wasm     = chk("WebAssembly",         ()=>typeof WebAssembly);
+cap.wasmTag  = chk("WebAssembly.Tag(95+)",()=>typeof WebAssembly.Tag);
+cap.wasmJSTag= chk("WebAssembly.JSTag",   ()=>typeof WebAssembly.JSTag);
+cap.wasmSusp = chk("WebAssembly.Suspending",()=>typeof WebAssembly.Suspending);
+
+// version pin
+w("\n--- 版本钉 ---");
+var v = {};
+v["RegExp.escape(125+)"]  = chk("RegExp.escape",()=>typeof RegExp.escape);
+v["Promise.withResolvers(124+)"]= chk("Promise.withResolvers",()=>typeof Promise.withResolvers);
+v["Object.groupBy(123+)"] = chk("Object.groupBy",()=>typeof Object.groupBy);
+v["Float16Array(135+)"]   = chk("Float16Array",()=>typeof Float16Array);
+v["Iterator.range(134+)"] = chk("Iterator.range",()=>typeof Iterator!=='undefined'&&typeof Iterator.range);
+
+w("\n--- 其他 ---");
+chk("navigator.gpu",       ()=>typeof navigator.gpu);
+chk("OffscreenCanvas",     ()=>typeof OffscreenCanvas);
+chk("WebTransport",        ()=>typeof WebTransport);
+chk("Notification",        ()=>typeof Notification);
+chk("speechSynthesis",     ()=>typeof window.speechSynthesis);
+chk("webkitSpeechRecognition",()=>typeof window.webkitSpeechRecognition);
+chk("chrome object",       ()=>typeof window.chrome);
+
+// summary
+var S="";
+S += "protocol = "+location.protocol+"\n";
+S += "isSecureContext = "+window.isSecureContext+"\n\n";
+S += "WebUSB      = "+(cap.usb?"YES":"no")+"\n";
+S += "WebBluetooth= "+(cap.bt?"YES":"no")+"\n";
+S += "WebSerial   = "+(cap.serial?"YES":"no")+"\n";
+S += "WebHID      = "+(cap.hid?"YES":"no")+"\n";
+S += "FilePicker  = "+(cap.fileopen?"YES":"no")+"\n";
+S += "SharedArrayBuffer = "+(cap.sab?"YES":"no")+"\n";
+if(!secure) S += "\n(注意: 非安全上下文，上述 API 可能被强制隐藏)";
+document.getElementById('sum').textContent=S;
+
+// live buttons
+var b=document.getElementById('btns');
+function mk(label,fn){var e=document.createElement('button');e.textContent=label;e.onclick=fn;b.appendChild(e);}
+mk("① USB.requestDevice", async function(){
+  try{ var d=await navigator.usb.requestDevice({filters:[]}); w("[USB] OK "+d.vendorId+":"+d.productId+" "+d.productName); }
+  catch(e){ w("[USB] "+e); }
+});
+mk("② BT.requestDevice", async function(){
+  try{ var d=await navigator.bluetooth.requestDevice({acceptAllDevices:true}); w("[BT] OK "+d.name); }
+  catch(e){ w("[BT] "+e); }
+});
+mk("③ Serial.requestPort", async function(){
+  try{ await navigator.serial.requestPort(); w("[SER] OK"); }
+  catch(e){ w("[SER] "+e); }
+});
+mk("④ HID.requestDevice", async function(){
+  try{ var d=await navigator.hid.requestDevice({filters:[]}); w("[HID] OK "+d.length); }
+  catch(e){ w("[HID] "+e); }
+});
+</script>
+</body>
+</html>
