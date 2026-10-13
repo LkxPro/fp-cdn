@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark">
+<meta name="referrer" content="no-referrer">
+<link rel="icon" href="data:,">
+<title>设置跳转 · 三项对照</title>
+<style>
+:root { --bg:#151b1d; --surface:#20292c; --ink:#f2f5f3; --muted:#b5c4c2; --line:#465756; --accent:#b1e3ca; --accent-ink:#133629; --focus:#ffe0a2; }
+* { box-sizing:border-box; }
+body { margin:0; background:var(--bg); color:var(--ink); font:18px/1.6 "PingFang SC","Microsoft YaHei",sans-serif; }
+main { max-width:1480px; padding:40px 32px; margin:auto; }
+header { display:flex; gap:24px; align-items:flex-start; justify-content:space-between; margin-bottom:28px; }
+.eyebrow { margin:0 0 8px; color:var(--accent); font-size:15px; letter-spacing:.08em; }
+h1 { margin:0 0 12px; font-size:clamp(30px,4vw,44px); line-height:1.2; font-weight:600; }
+h2 { margin:0; font-size:25px; font-weight:600; }
+p { margin:8px 0; text-wrap:pretty; }
+.muted,.hint { color:var(--muted); }
+.progress { white-space:nowrap; color:var(--accent); border:1px solid var(--line); padding:8px 16px; border-radius:12px; }
+.tests { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:20px; }
+article { padding:24px; background:var(--surface); border:1px solid var(--line); border-radius:12px; min-width:0; }
+.number { display:block; margin-bottom:16px; color:var(--accent); font:32px/1 ui-monospace,monospace; }
+.description { min-height:58px; margin:12px 0 20px; color:var(--muted); }
+.launch,button { display:inline-flex; justify-content:center; align-items:center; min-height:60px; border-radius:8px; font:inherit; font-weight:600; cursor:pointer; text-decoration:none; border:1px solid var(--accent); padding:12px 20px; color:var(--accent-ink); background:var(--accent); }
+.launch { width:100%; font-size:22px; }
+.launch:hover,button:hover { filter:brightness(1.08); }
+.launch:active,button:active { transform:translateY(1px); }
+:focus-visible { outline:3px solid var(--focus); outline-offset:4px; }
+.attempt { min-height:26px; margin:10px 0 20px; color:var(--muted); font-size:15px; }
+label { display:block; margin:12px 0 8px; }
+select,input,textarea { width:100%; font:inherit; color:var(--ink); background:var(--bg); border:1px solid var(--line); border-radius:8px; padding:12px; min-height:56px; }
+select { cursor:pointer; }
+textarea { resize:vertical; }
+details { margin-top:20px; }
+summary { cursor:pointer; color:var(--muted); min-height:44px; padding:8px 0; }
+code { display:block; font:14px/1.6 ui-monospace,monospace; overflow-wrap:anywhere; color:var(--muted); }
+.results { margin-top:32px; padding-top:24px; border-top:1px solid var(--line); }
+.summary { font-size:20px; white-space:pre-wrap; margin:16px 0; overflow-wrap:anywhere; }
+.tools { display:flex; flex-wrap:wrap; align-items:center; gap:16px; }
+.secondary { color:var(--ink); background:transparent; border-color:var(--line); }
+.hint { font-size:15px; }
+#report { font:14px/1.6 ui-monospace,monospace; min-height:250px; }
+.environment { overflow-wrap:anywhere; color:var(--muted); font-size:15px; }
+footer { color:var(--muted); font-size:14px; margin-top:24px; }
+@media(max-width:950px) { .tests { grid-template-columns:1fr; } .description { min-height:0; } main { padding:28px 20px; } header { flex-direction:column; gap:12px; } }
+</style>
+</head>
+<body><main>
+<header>
+  <div><p class="eyebrow">浏览器外部跳转 / 第 1 轮</p><h1>能从网页打开设置吗？</h1>
+  <p class="muted">按 1 → 2 → 3 点击，返回后记录实际看到的界面。</p>
+  <p class="hint">电话项使用占位号码，只看界面，不要拨出。页面不会自动判定成功。</p></div>
+  <div id="progress" class="progress" aria-live="polite">已记录 0 / 3</div>
+</header>
+<section class="tests" aria-label="三项跳转对照">
+<article>
+  <span class="number">01</span><h2>普通电话链接</h2>
+  <p class="description">确认电话 App 仍可从浏览器打开。</p>
+  <a class="launch" id="launch-tel" href="tel:+12025550123">打开电话</a>
+  <p class="attempt" id="attempt-tel">尚未点击</p>
+  <label for="result-tel">返回后，记录结果</label>
+  <select id="result-tel"><option value="">待记录</option><option value="phone">打开了电话界面</option><option value="none">没有反应</option><option value="prompt">出现提示 / 选择框</option><option value="other">打开了其他界面</option></select>
+  <label for="note-tel">补充说明（可选）</label><input id="note-tel" maxlength="500" placeholder="例如提示原文、界面名称">
+  <details><summary>查看实际链接</summary><code>tel:+12025550123</code></details>
+</article>
+<article>
+  <span class="number">02</span><h2>完整电话 Intent</h2>
+  <p class="description">同一号码，改用完整 Intent 格式。</p>
+  <a class="launch" id="launch-intent" href="intent:+12025550123#Intent;scheme=tel;action=android.intent.action.VIEW;end">通过 Intent 打开</a>
+  <p class="attempt" id="attempt-intent">尚未点击</p>
+  <label for="result-intent">返回后，记录结果</label>
+  <select id="result-intent"><option value="">待记录</option><option value="phone">打开了电话界面</option><option value="none">没有反应</option><option value="prompt">出现提示 / 选择框</option><option value="other">打开了其他界面</option></select>
+  <label for="note-intent">补充说明（可选）</label><input id="note-intent" maxlength="500" placeholder="例如提示原文、界面名称">
+  <details><summary>查看实际链接</summary><code>intent:+12025550123#Intent;scheme=tel;action=android.intent.action.VIEW;end</code></details>
+</article>
+<article>
+  <span class="number">03</span><h2>系统设置入口</h2>
+  <p class="description">尝试打开设置首页，观察具体页面。</p>
+  <a class="launch" id="launch-settings" href="intent:#Intent;action=android.settings.SETTINGS;end">尝试打开设置</a>
+  <p class="attempt" id="attempt-settings">尚未点击</p>
+  <label for="result-settings">返回后，记录结果</label>
+  <select id="result-settings"><option value="">待记录</option><option value="android-settings">打开了 Android 系统设置</option><option value="car-settings">打开了车机定制设置</option><option value="phone-settings">打开了电话设置</option><option value="unclear-settings">打开了设置，但不确定类型</option><option value="none">没有反应</option><option value="prompt">出现提示 / 选择框</option><option value="other">打开了其他界面</option></select>
+  <label for="note-settings">补充说明（可选）</label><input id="note-settings" maxlength="500" placeholder="例如页面标题、有哪些菜单">
+  <details><summary>查看实际链接</summary><code>intent:#Intent;action=android.settings.SETTINGS;end</code></details>
+</article>
+</section>
+<section class="results" aria-labelledby="results-title">
+  <h2 id="results-title">本轮记录</h2><div id="summary" class="summary"></div>
+  <p id="storage-status" class="hint" role="status"></p>
+  <div class="tools"><button id="copy" type="button">复制记录</button><button id="new-round" type="button" class="secondary">开始新一轮</button><span id="copy-status" class="hint" role="status"></span></div>
+  <details id="report-details"><summary>完整记录 / 手动复制</summary>
+    <label for="os-version">车机软件版本（可选）</label><input id="os-version" maxlength="200" placeholder="填写设置中显示的软件版本">
+    <p class="environment" id="environment"></p><label for="report">记录内容</label><textarea id="report" readonly spellcheck="false"></textarea>
+  </details>
+</section>
+<footer>页面版本 settings-20261013-v1 · 记录仅保存在本浏览器，不会自动上传。截图或复制记录后发回即可。</footer>
+<noscript><p>JavaScript 未启用：上方三个链接仍可手动点击，请用截图或文字记录结果。</p></noscript>
+</main>
+<script>
+(function () {
+  'use strict';
+  var revision = 'settings-20261013-v1';
+  var storageKey = 'firefly-settings-probe-v1';
+  var ids = ['tel', 'intent', 'settings'];
+  var names = ['普通电话链接', '完整电话 Intent', '系统设置入口'];
+  var storageOK = true;
+  var nodes = {};
+  var state = fresh();
+  function fresh() { return { revision: revision, startedAt: new Date().toISOString(), osVersion: '', tests: {} }; }
+  function byId(id) { return document.getElementById(id); }
+  ids.forEach(function (id) {
+    nodes[id] = { link: byId('launch-' + id), result: byId('result-' + id), note: byId('note-' + id), attempt: byId('attempt-' + id) };
+  });
+  try {
+    var saved = JSON.parse(localStorage.getItem(storageKey) || 'null');
+    if (saved && saved.revision === revision && typeof saved.startedAt === 'string' && saved.tests && typeof saved.tests === 'object') state = saved;
+  } catch (error) { storageOK = false; }
+  state.osVersion = typeof state.osVersion === 'string' ? state.osVersion.slice(0, 200) : '';
+  ids.forEach(function (id) {
+    var row = state.tests[id];
+    if (!row || typeof row !== 'object') row = {};
+    state.tests[id] = {
+      result: typeof row.result === 'string' ? row.result : '',
+      note: typeof row.note === 'string' ? row.note.slice(0, 500) : '',
+      attempts: Array.isArray(row.attempts) ? row.attempts.filter(function (x) { return typeof x === 'string'; }).slice(-30) : [],
+      observedAt: typeof row.observedAt === 'string' ? row.observedAt : null
+    };
+    var n = nodes[id];
+    n.result.value = state.tests[id].result;
+    if (n.result.selectedIndex < 0) n.result.value = '';
+    state.tests[id].result = n.result.value;
+    n.note.value = state.tests[id].note;
+    n.link.addEventListener('click', function () {
+      var test = state.tests[id];
+      test.attempts.push(new Date().toISOString()); test.attempts = test.attempts.slice(-30);
+      // A click is only an attempt. Never infer the external app's result.
+      test.result = ''; test.observedAt = null; test.note = '';
+      n.result.value = ''; n.note.value = '';
+      persist(); render();
+      // Do not preventDefault: preserve native navigation and real user gesture.
+    });
+    n.result.addEventListener('change', function () {
+      state.tests[id].result = n.result.value;
+      state.tests[id].observedAt = n.result.value ? new Date().toISOString() : null;
+      persist(); render();
+    });
+    n.note.addEventListener('input', function () { state.tests[id].note = n.note.value; persist(); render(); });
+  });
+  byId('os-version').value = state.osVersion;
+  byId('os-version').addEventListener('input', function () { state.osVersion = this.value; persist(); render(); });
+  function persist() {
+    try { localStorage.setItem(storageKey, JSON.stringify(state)); storageOK = true; }
+    catch (error) { storageOK = false; }
+  }
+  function report() {
+    return {
+      revision: revision, startedAt: state.startedAt, recordedAt: new Date().toISOString(),
+      pageURL: location.href, userAgent: navigator.userAgent, platform: navigator.platform,
+      secureContext: window.isSecureContext === true, osVersion: state.osVersion,
+      observationMethod: 'manual selection; clicks are attempts only',
+      tests: ids.map(function (id, index) {
+        var row = state.tests[id];
+        return { id: id, name: names[index], href: nodes[id].link.getAttribute('href'), attempts: row.attempts,
+          result: row.result || 'unrecorded', resultLabel: nodes[id].result.options[nodes[id].result.selectedIndex].text,
+          observedAt: row.observedAt, note: row.note };
+      })
+    };
+  }
+  function render() {
+    var count = 0;
+    var lines = ids.map(function (id, index) {
+      var row = state.tests[id]; if (row.result) count++;
+      nodes[id].attempt.textContent = row.attempts.length ? '已点击 ' + row.attempts.length + ' 次；结果请手动记录' : '尚未点击';
+      var text = nodes[id].result.options[nodes[id].result.selectedIndex].text;
+      return (index + 1) + '. ' + names[index] + '：' + text + (row.note ? '（' + row.note + '）' : '');
+    });
+    byId('progress').textContent = '已记录 ' + count + ' / 3';
+    byId('summary').textContent = lines.join('\n');
+    byId('storage-status').textContent = storageOK ? '记录已保存在当前浏览器，返回或刷新后可继续。' : '浏览器无法保存记录；离开前请截图或复制。';
+    byId('report').value = JSON.stringify(report(), null, 2);
+    byId('environment').textContent = 'UA（浏览器自报，未经核实）：' + navigator.userAgent;
+  }
+  byId('copy').addEventListener('click', function () {
+    var text = byId('summary').textContent + '\n\n' + byId('report').value;
+    function fallback() {
+      byId('report-details').open = true; byId('report').focus(); byId('report').select();
+      byId('copy-status').textContent = '自动复制不可用，完整记录已选中，可手动复制或截图。';
+    }
+    if (!navigator.clipboard || !navigator.clipboard.writeText) { fallback(); return; }
+    try { navigator.clipboard.writeText(text).then(function () { byId('copy-status').textContent = '已复制，可以发回对话。'; }, fallback); }
+    catch (error) { fallback(); }
+  });
+  byId('new-round').addEventListener('click', function () {
+    if (!window.confirm('新一轮会清空本页当前记录。请先复制或截图。继续？')) return;
+    state = fresh();
+    ids.forEach(function (id) {
+      state.tests[id] = { result: '', note: '', attempts: [], observedAt: null };
+      nodes[id].result.value = ''; nodes[id].note.value = '';
+    });
+    byId('os-version').value = ''; byId('copy-status').textContent = '';
+    persist(); render();
+  });
+  window.addEventListener('pageshow', render);
+  persist(); render();
+}());
+</script>
+</body>
+</html>
+
